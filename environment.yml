@@ -1,0 +1,13 @@
+name: ninja-backend
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+      - Django==4.1.2
+      - django-redis==5.2.0
+      - djangorestframework==3.14.0
+      - markdown==3.4.1
+      - django-filter==22.1
+      - djangorestframework-simplejwt==5.2.2
+      - pandas==1.5.1
+      - redis-om==0.1.0
