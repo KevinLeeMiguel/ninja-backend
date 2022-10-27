@@ -60,9 +60,8 @@ class RedisUserModel(HashModel):
     """
     names: str
     national_id: str
-    phone_number: str
     gender: str
+    phone_number: str
     email: str
-    status: str
-    valid: bool
+    valid: str
     doc_id: str
