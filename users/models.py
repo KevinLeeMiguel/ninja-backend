@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.hashers import make_password
 from redis_om.model import HashModel
+from redis_om import Migrator, Field
 
 
 class CustomUserManager(BaseUserManager):
@@ -63,5 +64,7 @@ class RedisUserModel(HashModel):
     gender: str
     phone_number: str
     email: str
-    valid: str
-    doc_id: str
+    valid: str = Field(index=True)
+    doc_id: str = Field(index=True)
+
+Migrator().run()
