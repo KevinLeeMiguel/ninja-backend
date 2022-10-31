@@ -38,3 +38,13 @@ class RedisUserSerializer(serializers.Serializer):
     email = serializers.CharField()
     valid = serializers.BooleanField()
     doc_id = serializers.CharField()
+    processed = serializers.BooleanField()
+
+
+class DocSerializer(serializers.Serializer):
+    doc_id = serializers.CharField()
+    processed_records = serializers.IntegerField()
+    total_records = serializers.IntegerField()
+    status = serializers.CharField()
+    has_errors = serializers.BooleanField()
+

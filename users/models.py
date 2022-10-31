@@ -66,5 +66,16 @@ class RedisUserModel(HashModel):
     email: str
     valid: str = Field(index=True)
     doc_id: str = Field(index=True)
+    processed: str = Field(index=True)
+
+
+class DocModel(HashModel):
+    doc_id: str = Field(index=True)
+    processed_records: int = Field(default=0)
+    total_records: int
+    has_errors: str = Field(default="False")
+    # status of the doc - ['Pending', 'InProgress', 'Completed', 'Failed']
+    status: str = Field(index=True, default="Pending")
+
 
 Migrator().run()
