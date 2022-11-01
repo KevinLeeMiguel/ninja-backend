@@ -11,6 +11,7 @@ import pandas as pd
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
 from users.util import convert_and_save, validate_and_cache
 
@@ -20,6 +21,7 @@ class UserViewSet(ViewSet):
 
     parser_classes = [MultiPartParser]
     serializer_class = UserUploadSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request) -> Response:
         serialized_data = self.serializer_class(data=request.data)
