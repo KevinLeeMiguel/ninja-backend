@@ -1,4 +1,5 @@
 import imp
+import json
 from rest_framework import serializers
 from users.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -30,6 +31,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['names', 'national_id', 'phone_number', 'gender', 'email']
 
 
+class CustomJsonField(serializers.Serializer):
+    def to_representation(self, value):
+        
+        return json.loads(value or "{}")
+
 class RedisUserSerializer(serializers.Serializer):
     names = serializers.CharField()
     national_id = serializers.IntegerField()
@@ -39,6 +45,7 @@ class RedisUserSerializer(serializers.Serializer):
     valid = serializers.BooleanField()
     doc_id = serializers.CharField()
     processed = serializers.BooleanField()
+    errors = CustomJsonField()
 
 
 class DocSerializer(serializers.Serializer):

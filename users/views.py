@@ -1,3 +1,4 @@
+from symbol import star_expr
 import threading
 from uuid import uuid4
 from rest_framework.viewsets import ViewSet
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 
-from users.util import validate_and_cache
+from users.util import convert_and_save, validate_and_cache
 
 
 # Create your views here.
@@ -26,10 +27,9 @@ class UserViewSet(ViewSet):
         if serialized_data.is_valid():
             file: InMemoryUploadedFile = serialized_data.validated_data.get(
                 "file")
-            data = pd.read_excel(file.read())
             doc_id = uuid4().hex
             x = threading.Thread(
-                target=validate_and_cache, args=(data, doc_id))
+                target=validate_and_cache, args=(file, doc_id))
             x.start()
             return Response(data={"doc_id": doc_id}, status=status.HTTP_201_CREATED)
         return Response(data=serialized_data.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -45,3 +45,27 @@ class UserViewSet(ViewSet):
             }
             return Response(data=res, status=status.HTTP_200_OK)
         return Response(data="Doc Not found!", status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def commit(self, request, pk) -> Response:
+        doc = DocModel.find(DocModel.doc_id == pk).all()
+        if len(doc) > 0:
+            if doc[0].status != "Completed":
+                error_message = "Doc validation still in progress" if doc[0].status == "InProgress" else "Doc validation failed! try uploading a new file"
+                return Response(data=error_message, status=status.HTTP_400_BAD_REQUEST)
+            users = RedisUserModel.find((RedisUserModel.doc_id == pk) & (RedisUserModel.valid == "True")).all()
+            j = int(len(users)/2000)
+            batches = j if j%2000 == 0 else j+1
+            print(len(users))
+            for i in range(0,batches):
+                if i == batches-1:
+                    start = 2000*i
+                    convert_and_save(users[start:])
+                else:
+                    start = 2000*i
+                    end = (2000*i) + 2000
+                    convert_and_save(users[start:end])
+            
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(data="Doc Not found!", status=status.HTTP_400_BAD_REQUEST)
+        

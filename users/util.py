@@ -1,32 +1,133 @@
+import datetime
+import json
+import re
+from typing import List
 import pandas as pd
 
-from users.models import DocModel, RedisUserModel
+from users.models import DocModel, RedisUserModel, User
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
-def validate_and_cache(data: pd.DataFrame, doc_id: str):
+class UserValidator():
+    def __init__(self, redis_user_obj: RedisUserModel) -> None:
+        self.user = redis_user_obj
+        self.error_messages = []
+        self.valid = True
 
+    def flag_invalid(self):
+        self.valid = False
+
+    def validate_national_id(self):
+        pattern = re.compile("[1-9]{1}[0-9]{4}[7,8]{1}[0-9]{10}")
+        if re.fullmatch(pattern, self.user.national_id):
+            age = datetime.date.today().year - int(self.user.national_id[1:5])
+            if age >= 16:
+                return True
+            self.error_messages.append(
+                {"national_id": "Invalid ID number! age should be greater or equal to 16"})
+            self.flag_invalid()
+            return False
+        self.error_messages.append({"national_id": "Invalid ID number!"})
+        self.flag_invalid()
+        return False
+
+    def validate_names(self):
+        self.user.names = self.user.names.strip()
+        if len(self.user.names) > 3:
+            return True
+        self.error_messages.append(
+            {"names": "Should be more than 3 characters"})
+        self.flag_invalid()
+        return False
+
+    def validate_gender(self):
+        allowed_values = ["Male", "Female", "M", "F"]
+        if self.user.gender in allowed_values:
+            return True
+        self.error_messages.append(
+            {"gender": f"Invalid! allowed values are [{','.join(allowed_values)}]"})
+        self.flag_invalid()
+        return False
+
+    def validate_email(self):
+        pattern = re.compile("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$")
+        self.user.email = self.user.email.strip()
+        if re.fullmatch(pattern, self.user.email):
+            return True
+        self.error_messages.append({"email": "Invalid Email!"})
+        self.flag_invalid()
+        return False
+
+    def validate_phone_number(self):
+        # see https://regex101.com/r/DsaRfI/1
+        pattern = re.compile(
+            "/^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/gm")
+        self.user.phone_number = self.user.phone_number.strip()
+        if re.fullmatch(pattern, self.user.phone_number):
+            return True
+        self.error_messages.append({"phone_number": "Invalid phone number!"})
+        self.flag_invalid()
+        return False
+
+    def validate(self):
+        self.validate_national_id()
+        self.validate_names()
+        self.validate_gender()
+        self.validate_email()
+        # self.validate_phone_number()
+        return self.valid
+
+
+def validate_and_cache(file: InMemoryUploadedFile, doc_id: str):
+    data = pd.read_excel(file.read())
     doc = DocModel(
         doc_id=doc_id,
         total_records=len(data),
         status="InProgress"
     )
     doc.save()
-    for index, row in data.iterrows():
+    try:
+        for index, row in data.iterrows():
 
-        # Create HashModel for Redis cache and save
-        user = RedisUserModel(
-            names=row['names'],
-            national_id=row['NID'],
-            gender=row['gender'],
-            phone_number=row['phone_number'],
-            email=row['email'],
-            valid="True",
-            doc_id=doc_id,
-            processed="True"
-        )
+            # Create HashModel for Redis cache and save
+            user = RedisUserModel(
+                names=row['names'],
+                national_id=row['NID'],
+                gender=row['gender'],
+                phone_number=row['phone_number'],
+                email=row['email'],
+                valid="True",
+                doc_id=doc_id,
+                processed="True",
+                errors=""
+            )
 
-        user.save()
-        doc.processed_records += 1
+            validator = UserValidator(user)
+            if not validator.validate():
+                user.valid = "False"
+                user.errors = json.dumps(validator.error_messages)
+                doc.has_errors = "True"
+            user.save()
+            doc.processed_records += 1
+            doc.save()
+
+        doc.status = "Completed"
         doc.save()
-    doc.status = "Completed"
-    doc.save()
+    except Exception:
+        doc.status = "Failed"
+        doc.save()
+
+
+def convert_and_save(users: List[RedisUserModel]):
+    user_list = []
+    for user in users:
+        u = User()
+        u.names = user.names
+        u.national_id = user.national_id
+        u.phone_number = user.phone_number
+        u.gender = user.gender
+        u.email = user.email
+        u.username = user.email
+
+        user_list.append(u)
+    User.objects.bulk_create(user_list)

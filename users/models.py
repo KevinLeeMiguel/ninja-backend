@@ -63,10 +63,11 @@ class RedisUserModel(HashModel):
     national_id: str
     gender: str
     phone_number: str
-    email: str
+    email: str = Field(index=True)
     valid: str = Field(index=True)
     doc_id: str = Field(index=True)
     processed: str = Field(index=True)
+    errors: str
 
 
 class DocModel(HashModel):
