@@ -23,7 +23,7 @@ To run the app some requirements need to be met and some softwares and packages 
 
   ```
 
-- Run the Redis
+- Run Redis
   ```sh
   # Run Redis (as docker container)
   docker run -d --name ninja-redis -p 6379:6379 redis/redis-stack-server:latest
@@ -51,7 +51,7 @@ To run the app some requirements need to be met and some softwares and packages 
 - Run the Redis docker container
 
 ```sh
-  # Make sure if the redis container is running if not run the command below
+  # Make sure the redis container is running if not run the command below
   docker start ninja-redis
 ```
 
