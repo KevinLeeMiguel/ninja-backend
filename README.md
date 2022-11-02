@@ -66,6 +66,16 @@ To run the app some requirements need to be met and some softwares and packages 
 
 ```
 
+- Generate 50,000 Users excel file
+```sh
+  # activate the environment
+  conda activate ninja-backend
+  
+  # Run the script
+  python generate_users_data.py
+  
+```
+
 
 ## Endpoints (using the service)
 
