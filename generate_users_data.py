@@ -3,7 +3,9 @@ import random
 import string
 import pandas as pd 
 
-ids = np.random.randint(1199971111111111, 1200589999999999, 50000)
+number_of_records = 50000
+
+ids = np.random.randint(1199971111111111, 1200589999999999, number_of_records)
 
 
 def get_random_string(length):
@@ -21,7 +23,7 @@ names = []
 genders = []
 phone_numbers = []
 emails = []
-for i in range(50000):
+for i in range(number_of_records):
     names.append(f"{get_random_string(8)} {get_random_string(8)}")
     genders.append(random.choice(["M", "F", "Not Supported"]))
     phone_numbers.append(f"{generate_random_phone_number()}")
@@ -37,4 +39,4 @@ df = pd.DataFrame({
     "phone_number": phone_numbers,
 })
 
-df.to_excel('./users.xlsx', index=False)
+df.to_excel('./users/tests/test_users.xlsx', index=False)
